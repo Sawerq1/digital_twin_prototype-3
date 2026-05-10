@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Отчёт{% endblock %}
+{% block content %}
+<h1>Отчёт о дефектах за период</h1>
+<p class="muted">Выберите период и формат — приложение само сформирует
+файл с агрегированной статистикой и подробным списком дефектов и сразу отдаст
+его на скачивание. Запускать что-либо в командной строке не требуется.</p>
+<form method="post" class="card">
+  <div class="grid-2">
+    <div>
+      <label>Начало периода</label>
+      <input type="datetime-local" name="period_from" value="{{ default_from }}" required>
+    </div>
+    <div>
+      <label>Конец периода</label>
+      <input type="datetime-local" name="period_to" value="{{ default_to }}" required>
+    </div>
+    <div>
+      <label>Формат</label>
+      <select name="format">
+        <option value="PDF" selected>PDF — для печати и подшивки</option>
+        <option value="XLSX">XLSX — для дальнейшего анализа</option>
+        <option value="CSV">CSV — для загрузки в BI</option>
+      </select>
+    </div>
+  </div>
+  <p style="margin-top:18px;">
+    <button class="btn" type="submit">Сформировать и скачать</button>
+  </p>
+</form>
+{% endblock %}

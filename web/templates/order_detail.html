@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Заказ {{ order.order_code }}{% endblock %}
+{% block content %}
+<h1>Заказ {{ order.order_code }}</h1>
+
+<div class="card">
+  <div class="grid-2">
+    <div>
+      <p class="muted">Профиль</p>
+      <p><strong>{{ order.profile }}</strong> — {{ order.profile_name }}</p>
+    </div>
+    <div>
+      <p class="muted">Целевая длина / угол</p>
+      <p><strong>{{ order.target_length_mm }} мм</strong> / {{ order.target_angle_deg }}°
+        <span class="muted">(поправка профиля {{ order.cut_correction_mm }} мм)</span></p>
+    </div>
+    <div>
+      <p class="muted">Количество</p>
+      <p><strong>{{ order.quantity }} шт.</strong></p>
+    </div>
+    <div>
+      <p class="muted">Цвет / фрезеровка</p>
+      <p>{{ order.color or '—' }} · {{ 'фрезеровка' if order.needs_milling else 'без фрезеровки' }}</p>
+    </div>
+    <div>
+      <p class="muted">Статус</p>
+      <p><span class="badge badge-{{ order.status|lower }}">{{ order.status }}</span></p>
+    </div>
+    <div>
+      <p class="muted">Создан</p>
+      <p>{{ order.created_at }}</p>
+    </div>
+  </div>
+</div>
+
+<h2>Зафиксированные дефекты ({{ defects|length }})</h2>
+<div class="card">
+  {% if defects %}
+  <table>
+    <tr>
+      <th>Время</th><th>№</th><th>Состояние</th><th>Дефект</th>
+      <th>Оборудование</th><th>Знач.</th><th>Цель</th><th>Порог</th>
+      <th>Источник</th><th>Комм.</th>
+    </tr>
+    {% for d in defects %}
+      <tr>
+        <td>{{ d.detected_at|string|truncate(19, True, '') }}</td>
+        <td>{{ d.unit_index }}</td>
+        <td>{{ d.detected_state }}</td>
+        <td><code>{{ d.defect_code }}</code><br><span class="muted">{{ d.defect_name }}</span></td>
+        <td>{{ d.equipment_code or '—' }}</td>
+        <td>{{ '%.2f'|format(d.measured_value) if d.measured_value is not none else '—' }}</td>
+        <td>{{ '%.2f'|format(d.target_value) if d.target_value is not none else '—' }}</td>
+        <td>{{ '%.2f'|format(d.threshold_value) if d.threshold_value is not none else '—' }}</td>
+        <td>{{ 'авто' if d.auto_detected else 'оператор' }}</td>
+        <td class="muted">{{ d.comment or '' }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p class="muted">Дефекты по этому заказу не зафиксированы.</p>
+  {% endif %}
+</div>
+
+<h2>Зарегистрировать дефект вручную</h2>
+<form method="post" action="{{ url_for('defect_manual') }}" class="card">
+  <input type="hidden" name="order_id" value="{{ order.order_id }}">
+  <div class="grid-2">
+    <div>
+      <label>№ изделия в партии</label>
+      <input type="number" name="unit_index" min="1" value="1" required>
+    </div>
+    <div>
+      <label>Состояние процесса</label>
+      <select name="detected_state">
+        <option value="q1">q1 — ожидание ТЗ</option>
+        <option value="q2">q2 — подготовка материалов</option>
+        <option value="q4" selected>q4 — проверка после запила</option>
+        <option value="q6">q6 — дополнительная проверка</option>
+        <option value="q8">q8 — сборка и маркировка</option>
+        <option value="q9">q9 — упаковка</option>
+      </select>
+    </div>
+    <div>
+      <label>Тип дефекта</label>
+      <select name="defect_code" required>
+        {% for dt in defect_types %}
+          <option value="{{ dt.code }}">{{ dt.code }} — {{ dt.name_ru }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Оборудование (если связано)</label>
+      <select name="equipment_id">
+        <option value="">— не привязано —</option>
+        {% for e in equipment %}
+          <option value="{{ e.equipment_id }}">{{ e.code }} — {{ e.name_ru }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <label>Комментарий</label>
+  <textarea name="comment" rows="2" placeholder="Что заметил оператор"></textarea>
+  <p style="margin-top:14px;"><button class="btn" type="submit">Зарегистрировать дефект</button></p>
+</form>
+{% endblock %}

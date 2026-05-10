@@ -1,0 +1,16 @@
+﻿detected_at,order_id,unit_index,profile,defect_code,defect_name,detected_state,measured_value,target_value,threshold_value,equipment
+2026-05-03 21:39:26,6,1,BEAM,COLOR_UNEVEN,Неравномерное окрашивание,q9,,,,
+2026-05-03 21:32:04,4,9,KORNER,EDGE_DEFORMATION,Деформация краёв профиля,q1,5.38,,4.5,SAW
+2026-05-03 21:32:00,3,8,KUBIK,EDGE_DEFORMATION,Деформация краёв профиля,q1,4.92,,4.5,SAW
+2026-05-03 21:31:57,2,7,BEAM,EDGE_DEFORMATION,Деформация краёв профиля,q3,4.92,,4.5,SAW
+2026-05-03 21:31:52,1,6,ALFA,EDGE_DEFORMATION,Деформация краёв профиля,q1,5.33,,4.5,SAW
+2026-05-03 21:31:49,4,4,KORNER,EDGE_DEFORMATION,Деформация краёв профиля,q1,4.8,,4.5,SAW
+2026-05-03 21:31:49,5,5,LATEEN,EDGE_DEFORMATION,Деформация краёв профиля,q2,4.8,,4.5,SAW
+2026-05-03 21:31:46,4,4,KORNER,EDGE_DEFORMATION,Деформация краёв профиля,q3,4.8,,4.5,SAW
+2026-05-03 21:31:42,3,3,KUBIK,SCRATCH,Царапины,q2,68.31,,65.0,SAW
+2026-05-03 21:31:42,3,3,KUBIK,EDGE_DEFORMATION,Деформация краёв профиля,q2,4.76,,4.5,MILL
+2026-05-03 21:31:41,2,2,BEAM,SCRATCH,Царапины,q1,68.31,,65.0,SAW
+2026-05-03 21:31:41,2,2,BEAM,EDGE_DEFORMATION,Деформация краёв профиля,q1,4.76,,4.5,MILL
+2026-05-03 21:31:39,2,2,BEAM,SCRATCH,Царапины,q4,68.31,,65.0,SAW
+2026-05-03 21:31:38,2,2,BEAM,EDGE_DEFORMATION,Деформация краёв профиля,q1,4.86,,4.5,SAW
+2026-05-03 21:31:35,1,1,ALFA,EDGE_DEFORMATION,Деформация краёв профиля,q3,4.86,,4.5,SAW

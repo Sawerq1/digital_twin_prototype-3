@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Новый заказ{% endblock %}
+{% block content %}
+<h1>Новый производственный заказ</h1>
+<p class="muted">Оператор вводит параметры заказа. После сохранения цифровой двойник
+будет сравнивать измерения станков с целевой длиной и углом из этого заказа.</p>
+<form method="post" class="card">
+  <div class="grid-2">
+    <div>
+      <label>Код заказа</label>
+      <input type="text" name="order_code" required placeholder="ORD-2026-001">
+    </div>
+    <div>
+      <label>Тип профиля</label>
+      <select name="profile_type_id" required>
+        {% for p in profiles %}
+          <option value="{{ p.profile_type_id }}">{{ p.code }} — {{ p.name_ru }} (поправка {{ p.cut_correction_mm }} мм)</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Целевая длина запила, мм</label>
+      <input type="number" name="target_length_mm" required value="1000" min="1">
+    </div>
+    <div>
+      <label>Целевой угол, градусов</label>
+      <input type="number" name="target_angle_deg" value="90" step="0.1">
+    </div>
+    <div>
+      <label>Количество, шт.</label>
+      <input type="number" name="quantity" required value="10" min="1">
+    </div>
+    <div>
+      <label>Цвет покрытия</label>
+      <input type="text" name="color" placeholder="например, белый матовый">
+    </div>
+    <div>
+      <label><input type="checkbox" name="needs_milling"> Требуется фрезеровка</label>
+    </div>
+  </div>
+  <p style="margin-top:18px;">
+    <button type="submit" class="btn">Создать заказ</button>
+    <a href="{{ url_for('orders_list') }}" class="btn btn-secondary">Отмена</a>
+  </p>
+</form>
+{% endblock %}

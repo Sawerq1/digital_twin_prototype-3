@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Главная{% endblock %}
+{% block content %}
+<h1>Сводка по производству</h1>
+
+<div class="kpi">
+  <div class="item">
+    <div class="v">{{ total_defects }}</div>
+    <div class="l">Всего дефектов</div>
+  </div>
+  <div class="item">
+    <div class="v">{{ orders|length }}</div>
+    <div class="l">Активных заказов</div>
+  </div>
+  <div class="item">
+    <div class="v">{{ stats|length }}</div>
+    <div class="l">Типов дефектов</div>
+  </div>
+</div>
+
+<h2>Дефекты по типам</h2>
+<div class="card">
+  <table>
+    <tr><th>Код</th><th>Название</th><th style="text-align:right">Кол-во</th></tr>
+    {% for s in stats %}
+      <tr>
+        <td><code>{{ s.code }}</code></td>
+        <td>{{ s.name_ru }}</td>
+        <td style="text-align:right">{{ s.cnt }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+</div>
+
+<h2>Последние заказы</h2>
+<div class="card">
+  {% if orders %}
+  <table>
+    <tr>
+      <th>Код</th><th>Профиль</th><th>Длина, мм</th><th>Угол</th>
+      <th>Кол-во</th><th>Дефектов</th><th>Статус</th><th></th>
+    </tr>
+    {% for o in orders %}
+      <tr>
+        <td>{{ o.order_code }}</td>
+        <td>{{ o.profile }}</td>
+        <td>{{ o.target_length_mm }}</td>
+        <td>{{ o.target_angle_deg }}°</td>
+        <td>{{ o.quantity }}</td>
+        <td>{{ o.defect_cnt }}</td>
+        <td>
+          <span class="badge badge-{{ o.status|lower }}">{{ o.status }}</span>
+        </td>
+        <td><a href="{{ url_for('order_detail', order_id=o.order_id) }}">Открыть</a></td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p class="muted">Пока нет заказов. <a href="{{ url_for('order_new') }}">Создайте первый</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

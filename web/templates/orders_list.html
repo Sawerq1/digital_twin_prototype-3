@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Заказы{% endblock %}
+{% block content %}
+<h1>Производственные заказы</h1>
+<p><a href="{{ url_for('order_new') }}" class="btn">+ Новый заказ</a></p>
+<div class="card">
+  {% if orders %}
+  <table>
+    <tr>
+      <th>Код</th><th>Профиль</th><th>Длина, мм</th><th>Угол</th>
+      <th>Кол-во</th><th>Цвет</th><th>Фрезеровка</th>
+      <th>Дефектов</th><th>Статус</th><th></th>
+    </tr>
+    {% for o in orders %}
+      <tr>
+        <td>{{ o.order_code }}</td>
+        <td>{{ o.profile }}</td>
+        <td>{{ o.target_length_mm }}</td>
+        <td>{{ o.target_angle_deg }}°</td>
+        <td>{{ o.quantity }}</td>
+        <td>{{ o.color or '—' }}</td>
+        <td>{{ 'да' if o.needs_milling else 'нет' }}</td>
+        <td>{{ o.defect_cnt }}</td>
+        <td><span class="badge badge-{{ o.status|lower }}">{{ o.status }}</span></td>
+        <td><a href="{{ url_for('order_detail', order_id=o.order_id) }}">Открыть</a></td>
+      </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+    <p class="muted">Заказов нет.</p>
+  {% endif %}
+</div>
+{% endblock %}
