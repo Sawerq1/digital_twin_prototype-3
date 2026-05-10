@@ -20,7 +20,7 @@ REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
 @dataclass
 class OpcUaConfig:
-    endpoint: str = os.getenv("DT_OPCUA_ENDPOINT", "opc.tcp://0.0.0.0:4840/dt/server/")
+    endpoint: str = os.getenv("DT_OPCUA_ENDPOINT", "opc.tcp://10.211.55.9:4840",)
     namespace: str = os.getenv("DT_OPCUA_NS", "http://example.org/dt-lighting")
     poll_interval_s: float = 0.5  # период опроса клиентом
 

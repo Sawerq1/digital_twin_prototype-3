@@ -29,15 +29,27 @@ logger = logging.getLogger("data-processor")
 # Какие переменные опрашиваем — список (browse_path, metric, equipment_code).
 # Имена объектов соответствуют справочнику equipment.
 SENSOR_MAP = [
-    (["0:Objects", "2:Saw",  "2:BladeWear"],   "blade_wear",     "SAW"),
-    (["0:Objects", "2:Saw",  "2:Temperature"], "temp_c",         "SAW"),
-    (["0:Objects", "2:Saw",  "2:Vibration"],   "vibration_mm_s", "SAW"),
-    (["0:Objects", "2:Saw",  "2:CutLengthMm"], "length_mm",      "SAW"),
-    (["0:Objects", "2:Saw",  "2:CutAngleDeg"], "angle_deg",      "SAW"),
-    (["0:Objects", "2:Mill", "2:ToolWear"],    "blade_wear",     "MILL"),
-    (["0:Objects", "2:Mill", "2:Temperature"], "temp_c",         "MILL"),
-    (["0:Objects", "2:Mill", "2:Vibration"],   "vibration_mm_s", "MILL"),
+    # key в NODEIDS, metric в БД, код оборудования
+    ("blade_wear", "blade_wear", "SAW"),
+    ("temp_c",     "temp_c",     "SAW"),
+    ("vibration",  "vibration_mm_s", "SAW"),
+    ("length_mm",  "length_mm",  "SAW"),
+    ("angle_deg",  "angle_deg",  "SAW"),
 ]
+
+NODEIDS = {
+    "blade_wear": 'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.BladeWear',
+    "temp_c":     'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.TempC',
+    "vibration":  'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.Vibration_mm_s',
+    "length_mm":  'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.MeasuredLength',
+    "angle_deg":  'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.MeasuredAngle',
+    "state":      'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.CurrentState',
+    "unit":       'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.CurrentUnit',
+    "order_id":   'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.CurrentOrderID',
+    "profile":    'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.ProfileType',
+    "target_len": 'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.TargetLength',
+    "target_ang": 'ns=4;s=|var|CODESYS Control Win V3 x64.Application.GVL_Production.TargetAngle',
+}
 
 
 class DataProcessor:
@@ -157,16 +169,31 @@ class DataProcessor:
             await self.client.disconnect()
 
     async def _poll_once(self) -> None:
-        assert self.client is not None
-        # 1) состояние процесса
-        proc = await self.client.nodes.objects.get_child(["2:Process"])
-        state = await (await proc.get_child(["2:CurrentState"])).read_value()
-        signal = await (await proc.get_child(["2:CurrentSignal"])).read_value()
-        unit_index = int(await (await proc.get_child(["2:CurrentUnit"])).read_value() or 0)
-        order_code = await (await proc.get_child(["2:CurrentOrder"])).read_value()
-        profile = await (await proc.get_child(["2:CurrentProfile"])).read_value()
-        length_mm = await (await proc.get_child(["2:TargetLengthMm"])).read_value()
-        angle = await (await proc.get_child(["2:TargetAngleDeg"])).read_value()
+        # 1) состояние процесса — читаем напрямую из GVL_Production
+        node_state = self.client.get_node(NODEIDS["state"])
+        state_raw = await node_state.read_value()
+        state_int = int(state_raw or 0)
+        state = f"q{state_int}"  # 'q1'..'q10', как ожидал старый код
+
+        node_unit = self.client.get_node(NODEIDS["unit"])
+        unit_index = int(await node_unit.read_value() or 0)
+
+        node_order = self.client.get_node(NODEIDS["order_id"])
+        order_val = await node_order.read_value()
+        order_code = str(order_val or "")
+
+        node_profile = self.client.get_node(NODEIDS["profile"])
+        profile_val = await node_profile.read_value()
+        profile = str(profile_val or "")
+
+        node_len = self.client.get_node(NODEIDS["target_len"])
+        length_mm = float(await node_len.read_value() or 0.0)
+
+        node_ang = self.client.get_node(NODEIDS["target_ang"])
+        angle = float(await node_ang.read_value() or 0.0)
+
+        # сигнал (пока не используем, оставляем пустым)
+        signal = ""
 
         if not order_code or unit_index <= 0:
             return
@@ -200,12 +227,12 @@ class DataProcessor:
         self._last_state = state
 
         # 2) сенсорные показания
-        for path, metric, eq_code in SENSOR_MAP:
+        for key, metric, eq_code in SENSOR_MAP:
             try:
-                node = await self.client.nodes.root.get_child(path)
+                node = self.client.get_node(NODEIDS[key])
                 value = await node.read_value()
             except Exception as exc:  # pragma: no cover
-                logger.warning("Не удалось прочитать %s: %s", path, exc)
+                logger.warning("Не удалось прочитать %s (%s): %s", key, metric, exc)
                 continue
 
             eq_id = self._equipment_id(eq_code)
@@ -219,15 +246,9 @@ class DataProcessor:
 
             if self.on_reading:
                 await self.on_reading(
-                    order_id=self._current_order_id,
-                    unit_index=self._current_unit_index,
-                    equipment_id=eq_id,
-                    equipment_code=eq_code,
-                    metric=metric,
-                    value=float(value),
-                    state=state,
-                    target_length=float(length_mm),
-                    target_angle=float(angle),
+                    self._current_order_id,
+                    self._current_unit_index,
+                    eq_code, metric, float(value),
                 )
 
     def stop(self) -> None:

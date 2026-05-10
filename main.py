@@ -59,6 +59,20 @@ async def cmd_server() -> None:
     finally:
         await sim.stop()
 
+async def cmd_monitor() -> None:
+    db = Database()
+    db.init_schema()
+
+    controller = DefectController(db)
+    processor = DataProcessor(db)  # будет подключаться к OPCUA.endpoint
+
+    processor.on_reading = controller.handle_reading
+    processor.on_state_change = controller.handle_state_change
+
+    try:
+        await processor.run()  # бесконечный цикл до Ctrl+C
+    finally:
+        db.close()
 
 async def cmd_demo(duration_s: int = 30) -> None:
     db = Database()
@@ -123,21 +137,46 @@ async def cmd_report(days: int) -> None:
     print("CSV :", rep.generate_csv(period))
     db.close()
 
+async def cmd_monitor() -> None:
+    """OPC UA клиент для реального ПЛК (без имитатора)."""
+    db = Database()
+    db.init_schema()
 
+    controller = DefectController(db)
+    processor = DataProcessor(db)
+    processor.on_reading = controller.handle_reading
+    processor.on_state_change = controller.handle_state_change
+
+    print(f"Подключение к {OPCUA.endpoint} ...")
+    print("Ctrl+C — остановить сбор данных.")
+    try:
+        await processor.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        processor.stop()
+        db.close()
+        print("Мониторинг остановлен.")
 # ----------------------------------------------------------------- main
 
 def main() -> None:
     setup_logging()
     parser = argparse.ArgumentParser(description="Прототип цифрового двойника")
     sub = parser.add_subparsers(dest="cmd", required=True)
+
     sub.add_parser("server", help="запустить только OPC UA имитатор")
+
     p_demo = sub.add_parser("demo", help="полный демонстрационный прогон")
     p_demo.add_argument("--seconds", type=int, default=30)
+
     p_rep = sub.add_parser("report", help="сформировать отчёт за период")
     p_rep.add_argument("--days", type=int, default=7)
+
     p_web = sub.add_parser("web", help="запустить web-интерфейс")
     p_web.add_argument("--port", type=int, default=5000)
     p_web.add_argument("--host", type=str, default="127.0.0.1")
+    sub.add_parser("monitor", help="OPC UA клиент для реального ПЛК (без имитатора)")
+
     args = parser.parse_args()
 
     if args.cmd == "server":
@@ -150,7 +189,8 @@ def main() -> None:
         from web.app import create_app
         app = create_app()
         app.run(host=args.host, port=args.port, debug=False)
-
+    elif args.cmd == "monitor":
+        asyncio.run(cmd_monitor())
 
 if __name__ == "__main__":
     main()
